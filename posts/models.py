@@ -9,6 +9,7 @@ from typing import Any, ClassVar, Final
 
 import icontract
 from django.core.validators import MaxLengthValidator, MinLengthValidator
+from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db import models
 from django.utils import timezone
 
@@ -109,6 +110,14 @@ class Comment(models.Model):
 
     MAX_TEXT_LENGTH: ClassVar[Final[int]] = 2200
 
+    @staticmethod
+    def _validate_not_blank(value: str) -> None:
+        """Reject strings that are empty or whitespace-only."""
+        if not value.strip():
+            raise DjangoValidationError(
+                "Comment text cannot be blank or whitespace only."
+            )
+
     post = models.ForeignKey(
         Post,
         on_delete=models.CASCADE,
@@ -119,6 +128,7 @@ class Comment(models.Model):
     text = models.TextField(
         blank=False,
         validators=[
+            lambda v: Comment._validate_not_blank(v),
             MinLengthValidator(1),
             MaxLengthValidator(MAX_TEXT_LENGTH),
         ]
