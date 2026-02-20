@@ -98,7 +98,7 @@ class TestCommentEndpoint(APITestCase):
             self.client.post(self.url, self.valid_payload, format="json")
 
         mock_client.publish_comment.assert_called_once_with(
-            self.post.instagram_id, "Great shot!"
+            media_id=self.post.instagram_id, text="Great shot!"
         )
 
     # ------------------------------------------------------------------
