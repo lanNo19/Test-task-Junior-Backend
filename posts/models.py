@@ -63,7 +63,7 @@ class Post(models.Model):
         description="data must contain keys: id, permalink, timestamp, media_type",
     )
     @icontract.ensure(
-        lambda result: result[0].instagram_id == result[1] or not result[1],
+        lambda data, result: result[0].instagram_id == data["id"],
         description="returned post must have instagram_id matching data['id']",
     )
     def upsert(cls, data: dict[str, Any]) -> tuple["Post", bool]:
