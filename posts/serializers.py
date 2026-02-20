@@ -21,7 +21,7 @@ class PostSerializer(serializers.ModelSerializer):
     """
 
     class Meta:
-        model = type[Post]
+        model = Post
         fields: ClassVar[list[str]] = [
             "id",
             "instagram_id",
@@ -92,7 +92,7 @@ class CommentSerializer(serializers.ModelSerializer):
     """
 
     class Meta:
-        model = type[Comment]
+        model = Comment
         fields: ClassVar[list[str]] = [
             "id",
             "post",
