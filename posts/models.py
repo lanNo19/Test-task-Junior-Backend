@@ -117,6 +117,7 @@ class Comment(models.Model):
     # id assigned by Instagram after successful comment creation.
     instagram_comment_id = models.CharField(max_length=64)
     text = models.TextField(
+        blank=False,
         validators=[
             MinLengthValidator(1),
             MaxLengthValidator(MAX_TEXT_LENGTH),
