@@ -27,7 +27,7 @@ class PostFactory(DjangoModelFactory):
     """
 
     class Meta:
-        model = type[Post]
+        model = Post
 
     instagram_id: ClassVar[factory.Sequence] = factory.Sequence(
         lambda n: f"ig_post_{n:06d}"
@@ -53,7 +53,7 @@ class CommentFactory(DjangoModelFactory):
     """
 
     class Meta:
-        model = type[Comment]
+        model = Comment
 
     post: ClassVar[factory.SubFactory] = factory.SubFactory(PostFactory)
     instagram_comment_id: ClassVar[factory.Sequence] = factory.Sequence(
