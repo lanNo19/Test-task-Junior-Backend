@@ -3,6 +3,7 @@ Pagination configuration for the posts app.
 
 CursorPagination is used for the post list endpoint.
 """
+from typing import ClassVar
 
 from rest_framework.pagination import CursorPagination
 
@@ -13,6 +14,6 @@ class PostCursorPagination(CursorPagination):
     Ordered with newest first, matching the Post model's default ordering.
     """
 
-    page_size = 20
-    ordering = "-timestamp"
-    cursor_query_param = "cursor"
+    page_size: ClassVar[int] = 20
+    ordering: ClassVar[str] = "-timestamp"
+    cursor_query_param: ClassVar[str] = "cursor"
