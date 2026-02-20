@@ -1,79 +1,187 @@
-# Test Assignment for Junior Backend Developer
+# Instagram Sync Service
 
-### О задании
-В реальном проекте мы работаем с Direct сообщениями, но для тестового выбрали API постов и комментариев. Это самый простой способ проверить навыки интеграции с внешними сервисами, не заставляя вас тратить лишнее время на сложную логику доступов. Нам важно увидеть, как вы проектируете архитектуру и работаете с данными.
+A Django + DRF service that synchronises Instagram media into a local PostgreSQL database and proxies comment creation back to Instagram.
 
-**Вакансия и тестовое задание актуальны, пока этот репозиторий открыт.**
+## Architecture Overview
 
-## Задача
-Разработать сервис на **Django + DRF**, который синхронизирует контент из Instagram в локальную базу данных и позволяет управлять комментариями через API.
+```
+posts/
+├── clients/instagram.py   ← InstagramClient: all HTTP to Instagram, deep module
+├── services/sync.py       ← SyncService: orchestrates full media sync
+├── services/comment.py    ← CommentService: posts + persists comments
+├── views.py               ← HTTP layer: parse → service → serialize
+├── models.py              ← Post, Comment
+├── serializers.py
+├── pagination.py
+└── tests/                 ← Integration + unit + property-based tests
+```
 
-## Стек
-* **Python 3.10+**, **Django**, **DRF**.
-* **PostgreSQL**.
-* **Docker** & **Docker Compose**.
-
----
-
-## Подготовка (API Access)
-Для работы с API не нужно реализовывать механизм OAuth-авторизации. Достаточно:
-1. Создать приложение в [App Dashboard](https://developers.facebook.com/apps/).
-2. Получить временный Access Token, следуя шагам в [официальной документации](https://developers.facebook.com/docs/instagram-platform/instagram-api-with-instagram-login/get-started).
-- Токен получите напрямую в App Dashboard, не нужно реализовывать механизм авторизации.
-3. Использовать полученный токен в коде через переменные окружения.
+No Instagram API calls ever appear in views or serializers. All outbound HTTP is abstracted away into `InstagramClient`.
 
 ---
 
-## Бизнес-требования
+## Quick Start (Docker)
 
-### 1. Синхронизация (Instagram -> DB)
-**Эндпоинт:** `POST /api/sync/`
-* Сервис должен выкачать **все** медиа-объекты пользователя из Instagram Graph API.
-* Реализовать автоматический обход всех страниц пагинации (используя поле `next` в ответе API), пока не будет получен полный список постов.
-* Данные сохраняются в локальную БД. Если пост уже был загружен ранее — обновить его поля актуальными данными из API (**Upsert логика**).
+```bash
+# 1. Clone your fork
+git clone https://github.com/lanNo19/Test-task-Junior-Backend.git
+cd Test-task-Junior-Backend.git
 
-### 2. Список постов
-**Эндпоинт:** `GET /api/posts/`
-* Вывод списка всех сохраненных постов из локальной базы данных.
-* Обязательна пагинация средствами DRF (`CursorPagination`).
+# 2. Configure environment
+cp .env.example .env
+# Edit .env and set:
+#   INSTAGRAM_ACCESS_TOKEN=...
+#   INSTAGRAM_USER_ID=...
+#   SECRET_KEY=...
 
-### 3. Комментирование
-**Эндпоинт:** `POST /api/posts/{id}/comment/`
-* `{id}` в URL — это **внутренний Primary Key** поста в нашей базе данных.
-* Система должна отправить текст комментария в Instagram API для соответствующего поста.
-* В случае успеха — сохранить комментарий в локальную БД со связью к посту и вернуть сериализованные данные созданного комментария.
+# 3. Start everything
+docker-compose up --build
+```
 
----
-
-## Тестирование
-Необходимо написать как минимум один интеграционный тест для эндпоинта создания комментария:
-* Тест должен проверять создание записи в БД и корректность ответа API при успешном запросе.
-* Тест должен проверять обработку ошибки, если пост с указанным `{id}` отсутствует в базе.
-* Тест должен проверять обработку ошибки, если указанный пост существует в базе, но его нет уже в Instagram.
-* **Требование:** Запрещено выполнять реальные HTTP-запросы к Instagram API во время тестов. Используйте инструменты мокирования (`unittest.mock`, `requests-mock` или аналоги) для имитации ответов от внешнего сервиса.
+The API is available at `http://localhost:8000/api/`.
 
 ---
 
-## Технические условия
-* **Docker:** Весь проект (приложение + БД) должен подниматься одной командой: `docker-compose up --build`.
-* **Архитектура:** Ожидается разделение ответственности. Логика запросов к внешнему API должна быть вынесена в отдельный слой (Services/Clients), а не находиться внутри Views.
-* **Качество кода:** * Соблюдение PEP8.
-    * Использование **Type Hinting** (аннотации типов).
-    * Наличие кратких комментариев (**Docstrings**) к ключевым бизнес-методам (логика синхронизации, интеграция с API).
-    * Обработка ошибок API.
+## uv + PyCharm
+
+```bash
+# Install uv
+pip install uv
+
+# Create venv and install all dependencies
+uv venv
+source .venv/bin/activate          # Windows: .venv\Scripts\activate
+uv pip install -e ".[dev]"
+
+# Copy and fill in env vars
+cp .env.example .env
+
+# Run migrations (requires PostgreSQL running locally)
+python manage.py migrate
+
+# Start dev server
+python manage.py runserver
+```
 
 ---
 
-## Что мы оцениваем
-1. Умение работать с внешней документацией и API.
-2. Архитектурные решения при проектировании моделей и слоев логики.
-3. Владение инструментами DRF (сериализаторы, пагинация, тесты).
-4. Чистота и аккуратность кода.
-4. Базовые навыки контейнеризации приложения.
+## Getting Your Instagram Access Token
+
+1. Go to [Meta for Developers](https://developers.facebook.com/apps/) and create an app.
+2. Add the **Instagram** product to your app.
+3. Follow [Get Started with Instagram API](https://developers.facebook.com/docs/instagram-platform/instagram-api-with-instagram-login/get-started).
+4. Generate a token directly in the App Dashboard — **no OAuth flow required**.
+5. Copy the token and your numeric User ID into `.env`.
 
 ---
 
-## Порядок сдачи задачи
-1. Сделайте **Fork** данного репозитория.
-2. Опубликуйте решение в вашем публичном репозитории.
-3. Добавьте в ваш `README.md` инструкцию по настройке и запуску проекта.
+## API Reference
+
+### `POST /api/sync/`
+
+Fetches all media from Instagram and upserts into local DB.
+
+```bash
+curl -X POST http://localhost:8000/api/sync/
+```
+
+```json
+{ "created": 12, "updated": 3 }
+```
+
+| Status | Meaning |
+|--------|---------|
+| 200 | Sync completed |
+| 502 | Instagram API error |
+
+---
+
+### `GET /api/posts/`
+
+Returns locally cached posts with cursor pagination.
+
+```bash
+curl http://localhost:8000/api/posts/
+curl "http://localhost:8000/api/posts/?cursor=<cursor>"
+```
+
+```json
+{
+  "next": "http://localhost:8000/api/posts/?cursor=cD0y",
+  "previous": null,
+  "results": [
+    {
+      "id": 1,
+      "instagram_id": "17854360229135492",
+      "caption": "Hello world",
+      "media_type": "IMAGE",
+      "media_url": "https://...",
+      "permalink": "https://www.instagram.com/p/",
+      "timestamp": "2024-11-01T10:00:00Z",
+      "synced_at": "2025-02-13T12:00:00Z"
+    }
+  ]
+}
+```
+
+---
+
+### `POST /api/posts/{id}/comment/`
+
+Posts a comment to Instagram and saves it locally. `{id}` is the **internal** DB primary key.
+
+```bash
+curl -X POST http://localhost:8000/api/posts/1/comment/ \
+  -H "Content-Type: application/json" \
+  -d '{"text": "Great shot!"}'
+```
+
+```json
+{
+  "id": 7,
+  "post": 1,
+  "instagram_comment_id": "17858893269000001",
+  "text": "Great shot!",
+  "created_at": "2025-02-13T12:05:00Z"
+}
+```
+
+| Status | Meaning |
+|--------|---------|
+| 201 | Comment created |
+| 400 | Invalid request body |
+| 404 | Post not found in local DB |
+| 502 | Instagram rejected the comment |
+
+---
+
+## Running Tests
+
+```bash
+# All tests
+python -m pytest
+
+# Specific test file
+python -m pytest posts/tests/test_comment_endpoint.py -v
+
+# With coverage
+python -m pytest --cov=posts --cov-report=term-missing
+
+# Property-based tests only
+python -m pytest posts/tests/test_comment_properties.py -v
+```
+
+Tests run fully offline, no real Instagram API calls are made. All HTTP is mocked.
+
+---
+
+## Environment Variables
+
+| Variable | Required | Description |
+|---|---|---|
+| `INSTAGRAM_ACCESS_TOKEN` | Yes | Long-lived Graph API token |
+| `INSTAGRAM_USER_ID` | Yes | Numeric Instagram user ID |
+| `INSTAGRAM_API_VERSION` | No | API version (default: `v21.0`) |
+| `SECRET_KEY` | Yes (prod) | Django secret key |
+| `DEBUG` | No | `True` for development |
+| `DATABASE_URL` | No | Overrides default DB config |
