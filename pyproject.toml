@@ -1,9 +1,36 @@
 [project]
-name = "test-task-junior-backend"
+name = "instagram-sync"
 version = "0.1.0"
-description = "Add your description here"
-readme = "README.md"
-requires-python = ">=3.13"
+description = "Instagram content sync service — Django + DRF"
+requires-python = ">=3.10"
 dependencies = [
-    "requests>=2.32.5",
+    "django>=4.2,<5.0",
+    "djangorestframework>=3.15",
+    "psycopg2-binary>=2.9",
+    "requests>=2.31",
+    "python-decouple>=3.8",
+    "dj-config-url>=0.1.1",
+    "factory-boy>=3.3.3",
+    "pytest>=9.0.2",
+    "hypothesis>=6.151.9",
+    "icontract>=2.7.3",
 ]
+
+[project.optional-dependencies]
+dev = [
+    "factory-boy>=3.3",
+    "hypothesis>=6.100",
+    "requests-mock>=1.11",
+    "pytest-django>=4.8",
+    "icontract>=2.6",
+]
+
+[tool.ruff]
+line-length = 88
+select = ["E", "F", "W", "I"]
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "config.settings"
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
